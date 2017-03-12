@@ -1,71 +1,45 @@
-#ifndef TESTSTACK_H
-#define TESTSTACK_H
+#include <iostream>
+#include <ctime>
+#include <cassert>
+#include <vector>
+#include "teststack.h"
+#include "memorypool.h"
 
-template<typename T>
-struct Node_
+#define REPS 100000
+#define ELEM 50
+
+using namespace std;
+
+int main()
 {
-    T val;
-    Node_* next;
-};
+	clock_t start = clock();
 
-template<typename T, typename Alloc = std::allocator<T> >
-class TestStack
-{
-    typedef Node_<T> Node;
-    typedef typename Alloc::template rebind<Node>::other allocator;
+	TestStack<int> defaultStack;
+	for (int i = 0; i < REPS; i++) {
+		//std::cout << "s" << std::endl;
+		assert(defaultStack.empty());
+		for (int j = 0; j < ELEM; j++)   defaultStack.push(j);
+		for (int j = 0; j < ELEM; j++)   defaultStack.pop();
+	}
+	cout << "default allocator of stack uses " << ((double)clock() - start) << endl;
 
+	start = clock();
+	vector<int> allocatorVec;
+	for (int i = 0; i < REPS; i++) {
+		assert(allocatorVec.empty());
+		for (int j = 0; j < ELEM; j++)	allocatorVec.push_back(j);
+		for (int j = 0; j < ELEM; j++)	allocatorVec.pop_back();
+	}
+	cout << "default allocator of vector uses " << ((double)clock() - start) << endl;
 
-public:
-    TestStack():head(nullptr) {}
-    ~TestStack() {clear();}
+	start = clock();
+	TestStack<int, MemoryPool<int> > poolStack;
+	for (int i = 0; i < REPS; i++) {
+		assert(poolStack.empty());
+		for (int j = 0; j < ELEM; j++)   poolStack.push(j);
+		for (int j = 0; j < ELEM; j++)   poolStack.pop();
+	}
 
-    bool empty() {return head == nullptr;}
-    void push(const T& val);
-    T pop();
-    void clear();
-
-
-private:
-    Node* head;
-    allocator alloc;
-};
-
-template<typename T, typename Alloc>
-void TestStack<T, Alloc>::push(const T &val)
-{
-    Node* new_place = alloc.allocate(1);
-    alloc.construct(new_place, Node());
-
-    new_place->val = val;
-    new_place->next = head;
-    head = new_place;
+	cout << "memory pool allocator of stack uses " << ((double)clock() - start) << endl;
+	return 0;
 }
-
-template<typename T, typename Alloc>
-T TestStack<T, Alloc>::pop()
-{
-    //std::cout << "pop" << std::endl;
-    T ret = head->val;
-
-    Node* tmp = head;
-    head = head->next;
-    alloc.destroy(tmp);
-    alloc.deallocate(tmp, 1);
-
-    return ret;
-}
-
-template<typename T, typename Alloc>
-void TestStack<T, Alloc>::clear()
-{
-    Node* tmp = head;
-    while(tmp) {
-        Node* next_p = tmp->next;
-        alloc.destroy(tmp);
-        alloc.deallocate(tmp, 1);
-        tmp = next_p;
-    }
-    head = nullptr;
-}
-
-#endif // TESTSTACK_H
