@@ -1,26 +1,146 @@
 assume cs:code
 
 code segment
-	s1: db '1) reset pc',0
-	s2: db '2) start system',0
-	s3: db '3) clock',0
-	s4: db '4) set clock',0
+	s1: db '1) reset pc','$'
+	s2: db '2) start system','$'
+	s3: db '3) clock','$'
+	s4: db '4) set clock','$'
 	s:  dw offset s1, offset s2, offset s3, offset s4
+	tp:	db 9,8,7,4,2,0
+	printCache:	db 100 dup(0)
 
 start:
-	
 	call showCmd
-	
+endProg:
 	mov ax,4c00h
 	int 21h
 
-;=======================显示指令字符串，调用printStr, ds:[di]指向字符串入口地址=======================================================
+;=======================显示时间动态====================
+showDyTime:
+	call clearScreen
+showDyTimeLoop:
+	call showTime
+	jmp showDyTimeLoop
+	ret
+
+;=======================显示时间(静态)模块,es:[si]指向端口中时间信息的位数========================
+showTime:
+	push es
+	push si
+	push ds
+	push di
+	push cx
+	push dx
+
+	push cs
+	pop es
+	mov si,offset tp
+
+	push cs
+	pop ds
+	mov di,offset printCache 	;ds:[di]指向打印缓存，以便将时间信息打印出来
+
+	mov cx,3
+timelop0:
+	mov dl,'/'
+	call getTime
+	add di,3
+	inc si
+	loop timelop0
+
+	mov byte ptr ds:[di-1],0
+	mov byte ptr ds:[di],0
+	inc di
+
+	mov cx,3
+timelop1:
+	mov dl,':'
+	call getTime
+	add di,3
+	inc si
+	loop timelop1
+	
+	mov byte ptr ds:[di-1],'$'
+
+	mov dh,5
+	mov dl,30
+	push cs
+	pop ds
+	mov si,offset printCache
+	call printStr
+
+	mov ah,1
+	int 16h
+
+	cmp al,1bh 		;这里不能判断扫描码，因为先前已经给ah赋值1
+	je pressEsc
+	cmp ah,3bh
+	je pressF1
+	jmp showTimeRet
+
+pressEsc:
+	call showCmd
+	jmp showTimeRet
+pressF1:
+	mov ah,0
+	int 16h
+	mov ax,0b800h
+	mov es,ax
+	mov si,1
+	mov cx,2000
+changeColor:
+	inc byte ptr es:[si]
+	add si,2
+	loop changeColor
+	int 0ch 		;必须调用0ch清除缓冲区
+
+showTimeRet:
+	pop dx
+	pop cx
+	pop di
+	pop ds
+	pop si
+	pop es
+	ret
+
+;=======================这里是一些中继=========================================
+showCmdTrunk:
+	jmp showCmd
+
+;-----------------------子程序获得一个端口上的时间信息，并将其压入打印缓存---------------------------------------
+getTime:
+	push ax
+	push cx
+
+	mov al,es:[si]
+	out 70h,al
+	in al,71h
+
+	mov ah,al
+	mov cl,4
+	shr al,cl
+	and ah,00001111b
+
+	add ah,30h
+	add al,30h
+
+	mov ds:[di],ax
+	mov ds:[di+2],dl
+
+	pop cx
+	pop ax
+	ret
+
+
+;=======================显示指令字符串模块，调用printStr, ds:[di]指向字符串入口地址====================================================
 showCmd:
 	push si
 	push di
 	push ds
 	push dx
 	push cx
+
+	call clearScreen
 
 	mov di,offset s
 	push cs
@@ -35,6 +155,33 @@ showlop:
 	add di,2
 	loop showlop
 
+	mov ah,0 			;等待键盘输入
+	int 16h
+
+	cmp ah,02h
+	je func1
+	cmp ah,03h
+	je func2
+	cmp ah,04h
+	je func3
+	cmp ah,05h
+	je func4
+	jmp showCmdRet
+
+func1:
+	mov ax,0ffffh
+	push ax
+	mov ax,0
+	push ax
+	retf
+func2:
+
+func3:
+	call showDyTime
+	jmp showCmdRet
+func4:
+
+showCmdRet:
 	pop cx
 	pop dx
 	pop ds
@@ -42,8 +189,30 @@ showlop:
 	pop si
 	ret
 
+;-----------------------清除屏幕子程序-------------------------------------------------------------------
+clearScreen:
+	push ax
+	push es
+	push si
+	push cx
 
-;-----------------------显示字符串子程序，dh控制行，dl控制列，ds:[si]指向字符串----------------------------
+	mov ax,0b800h
+	mov es,ax
+	mov si,0
+	mov cx,2000
+clearlop:
+	mov byte ptr es:[si],0
+	add si,2
+	loop clearlop
+
+	pop cx
+	pop si
+	pop es
+	pop ax
+	ret
+
+
+;-----------------------显示字符串子程序，dh控制行，dl*2控制列，ds:[si]指向字符串----------------------------
 printStr:
 	push cx
 	push ax
@@ -64,7 +233,7 @@ printStr:
 
 print:
 	mov al,ds:[si]
-	cmp al,0
+	cmp al,'$'
 	je endPrint
 	mov es:[di],al
 	add di,2
