@@ -10,12 +10,163 @@ code segment
 	printCache:	db 100 dup(0)
 
 start:
-	call showCmd
+	mov ax,offset printCache
+	call getstr
 endProg:
 	mov ax,4c00h
 	int 21h
 
-;=======================显示时间动态====================
+;=======================引导现有的系统=================
+startSys:
+	push ax
+	push es
+	push bx
+	push cx
+	push dx
+
+	mov ax,0
+	mov es,ax
+	mov bx,7c00h
+
+	mov ah,2
+	mov al,1
+	mov ch,0
+	mov cl,1
+	mov dh,0
+	mov dl,80h
+	int 13h
+
+	pop dx
+	pop cx
+	pop bx
+	pop es
+	pop ax
+	ret
+
+;=======================重启计算机=====================
+restart:
+	mov ax,0ffffh
+	push ax
+	mov ax,0
+	push ax
+	retf
+
+;========================设置系统时间==================
+setTime:
+	call getstr
+	ret
+
+;-------------------------从键盘读取用户输入的时间信息----------------------------------
+getstr:
+	push ax
+getstrs:
+	mov ah,0
+	int 16h
+	cmp al,20h
+	jb nochar
+	mov ah,0
+	call charstack 		;将字符写入缓存
+	mov ah,2
+	call charstack
+	jmp getstrs
+
+nochar:
+	cmp ah,0eh
+	je backspace
+	cmp ah,1ch
+	je enter
+	jmp getstrs
+
+backspace:
+	mov ah,1
+	call charstack 		;字符弹出缓存
+	mov ah,2
+	call charstack
+	jmp getstrs
+enter:
+	mov al,'$'
+	mov ah,0
+	call charstack
+	mov ah,2
+	call charstack
+	pop ax
+	ret
+
+charstack:
+	jmp short charstart
+
+	table dw charpush,charpop,charshow
+	top dw offset printCache
+
+charstart: 	;ds:[si]指向打印缓存
+	push bx
+	push dx
+	push di
+	push es
+	push si
+	push ds
+
+	push cs
+	pop ds
+	mov si,offset printCache
+
+	cmp ah,2
+	ja sret
+	mov bl,ah
+	mov bh,0
+	add bx,bx
+	jmp word ptr table[bx]
+
+charpush:
+	mov si,top
+	mov ds:[si],al
+	inc top
+	jmp sret
+
+charpop:
+	cmp top,offset printCache
+	je sret
+	dec top
+	mov si,top
+	mov al,ds:[si]
+	jmp sret
+
+charshow:
+	mov bx,0b800h
+	mov es,bx
+	mov al,160
+	mov ah,0
+	mul dh
+	mov di,ax
+	add dl,dl
+	mov dh,0
+	add di,dx
+
+	mov bx,offset printCache
+
+charshows:
+	cmp bx,top
+	jne noempty
+	mov byte ptr es:[di],' '
+	jmp sret
+noempty:
+	mov al,ds:[bx]
+	mov es:[di],al
+	mov byte ptr es:[di+2],' '
+	inc bx
+	add di,2
+	jmp charshows
+
+sret:
+	pop ds
+	pop si
+	pop es
+	pop di
+	pop dx
+	pop bx
+	ret
+
+;=======================显示动态时间====================
 showDyTime:
 	call clearScreen
 showDyTimeLoop:
@@ -92,7 +243,7 @@ changeColor:
 	inc byte ptr es:[si]
 	add si,2
 	loop changeColor
-	int 0ch 		;必须调用0ch清除缓冲区
+	int 0ch 		;必须调用0ch中断清除缓冲区
 
 showTimeRet:
 	pop dx
@@ -169,17 +320,16 @@ showlop:
 	jmp showCmdRet
 
 func1:
-	mov ax,0ffffh
-	push ax
-	mov ax,0
-	push ax
-	retf
+	call restart
+	jmp showCmdRet
 func2:
-
+	call startSys
+	jmp showCmdRet
 func3:
 	call showDyTime
 	jmp showCmdRet
 func4:
+	call setTime
 
 showCmdRet:
 	pop cx
