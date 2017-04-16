@@ -1,6 +1,59 @@
-assume cs:code
+assume cs:code, cs:code1, cs:code2
 
-code segment
+code segment 		;该程序段为安装程序
+start:
+	mov ax,code1 	;将第二个程序段放进软盘1扇区
+	mov es,ax
+	mov bx,0
+
+	mov ah,3
+	mov al,1
+	mov ch,0
+	mov cl,1
+	mov dh,0
+	mov dl,0
+	int 13h
+
+	mov ax,code2 	;将第三个程序段放进软盘的2~17扇区
+	mov es,ax
+	mov bx,0
+
+	mov ah,3
+	mov al,15
+	mov ch,0
+	mov cl,2
+	mov dh,0
+	mov dl,0
+	int 13h
+
+	mov ax,4c00h
+	int 21h
+code ends
+
+code1 segment 		;这一个程序段负责将任务程序段加载进内存2000:0的位置并跳转到该位置执行程序
+	mov ax,2000h
+	mov es,ax
+	mov bx,0
+
+	mov ah,2
+	mov al,15
+	mov ch,0
+	mov cl,2
+	mov dh,0
+	mov dl,0
+	int 13h
+
+	mov ax,2000h
+	push ax
+	mov ax,0
+	push ax
+	retf
+
+	mov ax,4c00h
+	int 21h
+code1 ends
+
+code2 segment 		;主要的任务程序段
 	s1: db '1) reset pc','$'
 	s2: db '2) start system','$'
 	s3: db '3) clock','$'
@@ -9,12 +62,8 @@ code segment
 	tp:	db 9,8,7,4,2,0
 	printCache:	db 100 dup(0)
 
-start:
 	call showCmd
-endProg:
-	mov ax,4c00h
-	int 21h
-
+	
 ;=======================引导现有的系统=================
 startSys:
 	push ax
@@ -116,6 +165,8 @@ nochar:
 	jmp getstrs
 
 backToMenu:
+	mov ah,3
+	call charstack
 	call showCmd
 backspace:
 	mov ah,1
@@ -135,7 +186,7 @@ enter:
 charstack:
 	jmp short charstart
 
-	table dw charpush,charpop,charshow
+	table dw charpush,charpop,charshow,clearCache
 	top dw offset printCache
 
 charstart: 	;ds:[si]指向打印缓存
@@ -150,7 +201,7 @@ charstart: 	;ds:[si]指向打印缓存
 	pop ds
 	mov si,offset printCache
 
-	cmp ah,2
+	cmp ah,3
 	ja sret
 	mov bl,ah
 	mov bh,0
@@ -196,6 +247,10 @@ noempty:
 	inc bx
 	add di,2
 	jmp charshows
+	jmp sret
+
+clearCache:
+	mov top,offset printCache
 
 sret:
 	pop ds
@@ -438,6 +493,6 @@ endPrint:
 	pop ax
 	pop cx
 	ret
+code2 ends
 
-code ends
 end start
