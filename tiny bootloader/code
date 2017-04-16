@@ -1,7 +1,7 @@
-assume cs:code, cs:code1, cs:code2
-
+;主要的任务程序有4个模块，每个模块用‘=’分割，每个模块里面可能调用一些子程序，这些子程序用'-'分割
 code segment 		;该程序段为安装程序
-
+	assume cs:code
+start:
 	mov ax,code1 	;将第二个程序段放进软盘1扇区
 	mov es,ax
 	mov bx,0
@@ -31,6 +31,7 @@ code segment 		;该程序段为安装程序
 code ends
 
 code1 segment 		;这一个程序段为引导程序，负责将任务程序段加载进内存2000:0的位置并跳转到该位置执行程序
+	assume cs:code1
 	mov ax,2000h
 	mov es,ax
 	mov bx,0
@@ -54,6 +55,8 @@ code1 segment 		;这一个程序段为引导程序，负责将任务程序段加
 code1 ends
 
 code2 segment 		;主要的任务程序段
+	assume cs:code2
+	jmp start2
 	s1: db '1) reset pc','$'
 	s2: db '2) start system','$'
 	s3: db '3) clock','$'
@@ -64,13 +67,14 @@ code2 segment 		;主要的任务程序段
 start2:
 	call showCmd
 	
-;=======================引导现有的系统=================
+;=======================引导现有的系统==========================================
 startSys:
 	push ax
 	push es
 	push bx
 	push cx
 	push dx
+	call clearScreen
 
 	mov ax,0
 	mov es,ax
@@ -84,6 +88,12 @@ startSys:
 	mov dl,80h
 	int 13h
 
+	mov ax,0
+	push ax
+	mov ax,7c00h
+	push ax
+	retf
+
 	pop dx
 	pop cx
 	pop bx
@@ -91,15 +101,16 @@ startSys:
 	pop ax
 	ret
 
-;=======================重启计算机=====================
+;=======================重启计算机===================================================
 restart:
+	call clearScreen
 	mov ax,0ffffh
 	push ax
 	mov ax,0
 	push ax
 	retf
 
-;========================设置系统时间==================
+;========================设置系统时间================================================
 setTime:
 	call clearScreen
 	call getstr 	;用户要输入字符串，如果要将当前时间修改为16年3月20号9时12分30秒，则输入160320091230
@@ -261,7 +272,7 @@ sret:
 	pop bx
 	ret
 
-;=======================显示动态时间====================
+;=======================显示动态时间=============================================================
 showDyTime:
 	call clearScreen
 showDyTimeLoop:
@@ -269,7 +280,7 @@ showDyTimeLoop:
 	jmp showDyTimeLoop
 	ret
 
-;=======================显示时间(静态)模块,es:[si]指向端口中时间信息的位数========================
+;-------------------------显示时间(静态)模块,es:[si]指向端口中时间信息的位数---------------------
 showTime:
 	push es
 	push si
@@ -348,10 +359,6 @@ showTimeRet:
 	pop es
 	ret
 
-;=======================这里是一些中继=========================================
-showCmdTrunk:
-	jmp showCmd
-
 ;-----------------------子程序获得一个端口上的时间信息，并将其压入打印缓存---------------------------------------
 getTime:
 	push ax
@@ -377,7 +384,7 @@ getTime:
 	ret
 
 
-;=======================显示指令字符串模块，调用printStr, ds:[di]指向字符串入口地址====================================================
+;-------------------------显示指令字符串模块，调用printStr, ds:[di]指向字符串入口地址---------------------------
 showCmd:
 	push si
 	push di
@@ -494,4 +501,4 @@ endPrint:
 	ret
 code2 ends
 
-end start2
+end start
