@@ -1,7 +1,7 @@
 assume cs:code, cs:code1, cs:code2
 
 code segment 		;该程序段为安装程序
-start:
+
 	mov ax,code1 	;将第二个程序段放进软盘1扇区
 	mov es,ax
 	mov bx,0
@@ -30,7 +30,7 @@ start:
 	int 21h
 code ends
 
-code1 segment 		;这一个程序段负责将任务程序段加载进内存2000:0的位置并跳转到该位置执行程序
+code1 segment 		;这一个程序段为引导程序，负责将任务程序段加载进内存2000:0的位置并跳转到该位置执行程序
 	mov ax,2000h
 	mov es,ax
 	mov bx,0
@@ -61,7 +61,7 @@ code2 segment 		;主要的任务程序段
 	s:  dw offset s1, offset s2, offset s3, offset s4
 	tp:	db 9,8,7,4,2,0
 	printCache:	db 100 dup(0)
-
+start2:
 	call showCmd
 	
 ;=======================引导现有的系统=================
@@ -338,7 +338,6 @@ changeColor:
 	inc byte ptr es:[si]
 	add si,2
 	loop changeColor
-	int 0ch 		;必须调用0ch中断清除缓冲区
 
 showTimeRet:
 	pop dx
@@ -495,4 +494,4 @@ endPrint:
 	ret
 code2 ends
 
-end start
+end start2
