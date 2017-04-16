@@ -111,8 +111,12 @@ nochar:
 	je backspace
 	cmp ah,1ch
 	je enter
+	cmp ah,01h
+	je backToMenu
 	jmp getstrs
 
+backToMenu:
+	call showCmd
 backspace:
 	mov ah,1
 	call charstack 		;字符弹出缓存
@@ -341,7 +345,7 @@ showlop:
 	inc dh
 	add di,2
 	loop showlop
-
+inputCmd:
 	mov ah,0 			;等待键盘输入
 	int 16h
 
@@ -353,7 +357,7 @@ showlop:
 	je func3
 	cmp ah,05h
 	je func4
-	jmp showCmdRet
+	jmp inputCmd 		;如果不是这几种指令的话就重新输入
 
 func1:
 	call restart
