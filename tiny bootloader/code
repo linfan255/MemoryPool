@@ -10,8 +10,7 @@ code segment
 	printCache:	db 100 dup(0)
 
 start:
-	mov ax,offset printCache
-	call getstr
+	call showCmd
 endProg:
 	mov ax,4c00h
 	int 21h
@@ -53,7 +52,44 @@ restart:
 
 ;========================设置系统时间==================
 setTime:
-	call getstr
+	call clearScreen
+	call getstr 	;用户要输入字符串，如果要将当前时间修改为16年3月20号9时12分30秒，则输入160320091230
+
+	push cs
+	pop	es
+	mov si,offset printCache
+
+	push cs
+	pop ds
+	mov di,offset tp
+
+	mov cx,6
+setTimeLop:
+	push cx
+
+	mov al,ds:[di]	;设定访问的CMOS端口
+	out 70h,al
+
+	mov ah,es:[si]
+	mov al,es:[si+1]
+	sub ah,30h
+	sub al,30h
+
+	and ah,00001111b
+	and al,00001111b
+
+	mov cl,4
+	shl ah,cl
+	or al,ah
+	out 71h,al
+
+	inc di
+	add si,2
+
+	pop cx
+	loop setTimeLop
+
+	call showCmd
 	ret
 
 ;-------------------------从键盘读取用户输入的时间信息----------------------------------
