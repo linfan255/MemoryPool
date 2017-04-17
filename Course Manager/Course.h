@@ -8,7 +8,7 @@ class Course
 	friend void read(std::istream& input, Course& course);
 	friend std::ostream& operator << (std::ostream &out, const Course &course);
 	static int currentId;
-protected:
+private:
 	int id;
 	std::string name;
 public:
