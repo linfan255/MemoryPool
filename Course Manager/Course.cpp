@@ -8,6 +8,11 @@ Course::Course()
 	name = "";
 }
 
+Course::Course(std::string CourseName) {
+	id = currentId++;
+	name = CourseName; 
+}
+
 std::ostream &operator << (std::ostream &os, const Course& course)
 {
 	os << "Course: " << course.id << " : " << course.name;
@@ -16,8 +21,8 @@ std::ostream &operator << (std::ostream &os, const Course& course)
 
 Course::Course(const Course& course)
 {
-	id = course.getId();
-	name = course.getName();
+	id = course.id;
+	name = course.name;
 }
 
 void Course::printInfo() const
