@@ -144,7 +144,7 @@ setTimeLop:
 	out 71h,al
 
 	inc di
-	add si,2
+	add si,3
 
 	pop cx
 	loop setTimeLop
@@ -190,6 +190,8 @@ enter:
 	mov ah,0
 	call charstack
 	mov ah,2
+	call charstack
+	mov ah,3
 	call charstack
 	pop ax
 	ret
@@ -272,7 +274,7 @@ sret:
 	pop bx
 	ret
 
-;=======================显示动态时间=============================================================
+;=======================显示动态时间模块=============================================================
 showDyTime:
 	call clearScreen
 showDyTimeLoop:
@@ -280,7 +282,7 @@ showDyTimeLoop:
 	jmp showDyTimeLoop
 	ret
 
-;-------------------------显示时间(静态)模块,es:[si]指向端口中时间信息的位数---------------------
+;-------------------------显示时间(静态),es:[si]指向端口中时间信息的位数---------------------
 showTime:
 	push es
 	push si
