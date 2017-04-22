@@ -299,6 +299,7 @@ parsepipe(char **ps, char *es)
   return cmd;
 }
 
+
 struct cmd*
 parseredirs(struct cmd *cmd, char **ps, char *es)
 {
