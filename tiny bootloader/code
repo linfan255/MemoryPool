@@ -154,23 +154,71 @@ setTimeLop:
 
 ;-------------------------从键盘读取用户输入的时间信息----------------------------------
 getstr:
+	jmp short getstrStart
+	errorInfo db 'Unlegal input,try again:','$'
+getstrStart:
 	push ax
+unlegalStart:
 	mov bx,0
+	mov si,0
 getstrs:
 	mov ah,0
 	int 16h
 	cmp al,20h
 	jb nochar
+
+	cmp al,'0'
+	jb getstrs
+	cmp al,'9'
+	ja getstrs
+
+	cmp si,16
+	ja getstrs
+
 	mov ah,0
 	inc bx
+	inc si
 	call charstack 		;将字符写入缓存
 
 	cmp bx,2
+	jne jd5
+	mov al,'/'
+	mov ah,0
+	inc bx
+	inc si
+	call charstack
+jd5:
+	cmp bx,5
+	jne jd8
+	mov al,'/'
+	mov ah,0
+	inc bx
+	inc si
+	call charstack
+jd8:
+	cmp bx,8
+	jne jd11
+	mov al,'/'
+	mov ah,0
+	inc bx
+	inc si
+	call charstack
+jd11:
+	cmp bx,11
+	jne jd14
+	mov al,'/'
+	mov ah,0
+	inc bx
+	inc si
+	call charstack
+jd14:
+	cmp bx,14
 	jne showstack
 	mov al,'/'
 	mov ah,0
+	inc bx
+	inc si
 	call charstack
-	mov bx,0
 showstack:
 	mov ah,2
 	call charstack
@@ -190,12 +238,44 @@ backToMenu:
 	call charstack
 	call showCmd
 backspace:
+	cmp bx,0
+	je noDec0
+	dec bx
+noDec0:
+	cmp si,0
+	je noDec
+	dec si
+noDec:
 	mov ah,1
 	call charstack 		;字符弹出缓存
 	mov ah,2
 	call charstack
+	cmp bx,2
+	je backspace
+	cmp bx,5
+	je backspace
+	cmp bx,8
+	je backspace
+	cmp bx,11
+	je backspace
+	cmp bx,14
+	je backspace
 	jmp getstrs
 enter:
+	call checkLegal
+	cmp al,0
+	jne legal
+	call clearScreen
+	push cs
+	pop ds
+	mov si,offset errorInfo
+	mov dh,12
+	mov dl,0
+	call printStr
+	mov ah,3
+	call charstack
+	jmp unlegalStart
+legal:
 	mov al,'$'
 	mov ah,0
 	call charstack
@@ -246,6 +326,8 @@ charpop:
 	jmp sret
 
 charshow:
+	mov dh,12
+	mov dl,30
 	mov bx,0b800h
 	mov es,bx
 	mov al,160
@@ -282,6 +364,101 @@ sret:
 	pop di
 	pop dx
 	pop bx
+	ret
+
+;-----------------------检查缓冲区当中的时间是否合法，合法al=1,非法al=0-----------------------------
+checkLegal:
+	jmp short checkLegalStart
+	day db 31,29,31,30,31,30,31,31,30,31,30,31
+checkLegalStart:
+	push es
+	push si
+	push di
+	push ds
+	push bx
+	push dx
+
+	push cs
+	pop es
+	mov si,offset printCache
+
+	push cs
+	pop ds
+	mov bx,offset day 		;ds:[bx]指向天数
+
+	;检查月份
+	mov di,10 			
+	mov al,es:[si+3]
+	sub al,30h
+	mov ah,0
+	mul di
+	add al,es:[si+4]
+	sub ax,30h
+	cmp ax,12
+	ja isunlegal
+
+	add bx,ax
+	dec bx
+
+	;检查日期
+	mov di,10
+	mov al,es:[si+6]
+	sub al,30h
+	mov ah,0
+	mul di
+	add al,es:[si+7]
+	sub ax,30h
+	mov dl,ds:[bx]
+	mov dh,0
+	cmp ax,dx
+	ja isunlegal
+	
+	;检查小时
+	mov di,10
+	mov al,es:[si+9]
+	sub al,30h
+	mov ah,0
+	mul di
+	add al,es:[si+10]
+	sub ax,30h
+	cmp ax,24
+	ja isunlegal
+	
+	;检查分钟
+	mov di,10
+	mov al,es:[si+12]
+	sub al,30h
+	mov ah,0
+	mul di
+	add al,es:[si+13]
+	sub ax,30h
+	cmp ax,60
+	ja isunlegal
+	
+	;检查秒数
+	mov di,10
+	mov al,es:[si+15]
+	sub al,30h
+	mov ah,0
+	mul di
+	add al,es:[si+16]
+	sub ax,30h
+	cmp ax,60
+	ja isunlegal
+	jmp islegal
+
+isunlegal:
+	mov al,0
+	jmp checkRet
+islegal:
+	mov al,1
+checkRet:
+	pop dx
+	pop bx
+	pop ds
+	pop di
+	pop si
+	pop es
 	ret
 
 ;=======================显示动态时间模块=============================================================
