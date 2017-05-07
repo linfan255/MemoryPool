@@ -9,6 +9,7 @@ code segment
 start:
 	jmp short startProg
 	len dw 2
+	speed dw 00ffh
 startProg:
 	call paintUI
 	
@@ -64,6 +65,10 @@ move:  			;dl--方向：0123对应上下左右
 	je addLen
 	cmp al,'k'
 	je subLen
+	cmp al,'u'
+	je speedUp
+	cmp al,'i'
+	je speedReduc
 
 	jmp goOn
 moveUp:
@@ -80,12 +85,12 @@ moveLeft:
 	cmp dl,3
 	je goOn
 	mov dl,2
-	jmp goOn
+	jmp short goOn
 moveRight:
 	cmp dl,2
 	je goOn
 	mov dl,3
-	jmp goOn
+	jmp short goOn
 addLen:
 	mov ax,data
 	mov ds,ax
@@ -105,24 +110,50 @@ addLen:
 
 appendUp:
 	sub ax,160
-	jmp append
+	jmp short append
 appendDown:
 	add ax,160
-	jmp append
+	jmp short append
 appendLeft:
 	sub ax,2
-	jmp append
+	jmp short append
 appendRight:
 	add ax,2
 
 append:
 	mov ds:[bx + 2],ax
 	inc len
-	jmp goOn
+	jmp short goOn
 subLen:
 	dec len
+	jmp short goOn
+
+speedUp:
+	mov ax,speed
+	sub ax,10h
+	mov speed,ax
+	jmp short goOn
+speedReduc:
+	mov ax,speed
+	add ax,10h
+	mov speed,ax
 
 goOn:
+	mov ax,speed
+	cmp ax,10h
+	jb tooFast
+	cmp ax,0fffh
+	ja tooSlow
+	jmp short clsInputCache
+
+tooFast:
+	mov ax,10h
+	mov speed,ax
+	jmp short clsInputCache
+tooSlow:
+	mov ax,0fffh
+	mov speed,ax
+clsInputCache:
 	mov ah,0ch
 	int 21h
 noinput:
@@ -306,7 +337,7 @@ paintUILp2:
 
 sleep:
 	push cx
- 	mov cx,00ffh  ;注意：改变此cx值可改变延时的时间长短
+ 	mov cx,speed  ;注意：改变此cx值可改变延时的时间长短
 s0:	push cx
     mov cx,00fffh
 s1:	loop s1
