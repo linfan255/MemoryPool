@@ -1,13 +1,24 @@
 #include <stdio.h>
 #include "player.h"
 
+void showMenu(char *filename) {
+	system("clear");
+	printf("\n\n\n\n\n");
+	printf("                                  0--exit\n");
+	printf("                             1--play/stop\n");
+	printf("                                  2--next\n");
+	printf("                                  3--prev\n");
+	printf("\n");
+	printf("                        ==========playing %s===========\n", filename);
+}
+
 int main(int argc, char **argv) {
 	initList();
-	int op;
 	curr = head;
 
-	int isPlaying = 0, init = 1;	//标识当前是否正在播放
+	isPlaying = 0, init = 1;	//标识当前是否正在播放
 	for(;;) {
+		op = -1;
 		scanf("%d", &op);
 
 		switch(op) {
@@ -21,6 +32,7 @@ int main(int argc, char **argv) {
 				if(init) {
 					isPlaying = 1;
 					init = 0;
+					showMenu(curr->songName);
 					Play(curr->songName);
 				}
 				else {
@@ -44,7 +56,7 @@ int main(int argc, char **argv) {
 				isPlaying = 1;
 				curr = curr->next;
 				if(curr == NULL)	curr = head;
-				printf("playing %s\n", curr->songName);
+				showMenu(curr->songName);
 				Play(curr->songName);
 				break;
 
@@ -57,7 +69,7 @@ int main(int argc, char **argv) {
 				isPlaying = 1;
 				curr = curr->prev;
 				if(curr == NULL)	curr = tail;
-				printf("playing %s\n", curr->songName);
+				showMenu(curr->songName);
 				Play(curr->songName);
 				break;
 
