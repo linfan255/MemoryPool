@@ -9,7 +9,16 @@ void showMenu(char *filename) {
 	printf("                                  2--next\n");
 	printf("                                  3--prev\n");
 	printf("\n");
-	printf("                        ==========playing %s===========\n", filename);
+	if(filename != NULL)
+		printf("                        ==========playing %s===========\n", filename);
+}
+
+static void sig_alrm(int signo) {
+	if(isPlaying)
+	  kill(pid, SIGKILL);
+	curr = curr->next;
+	if(curr == NULL)	curr = head;
+	Play(curr->songName);
 }
 
 int main(int argc, char **argv) {
@@ -17,7 +26,11 @@ int main(int argc, char **argv) {
 	curr = head;
 
 	isPlaying = 0, init = 1;	//标识当前是否正在播放
+
+	showMenu(NULL);
 	for(;;) {
+		if(signal(SIGALRM, sig_alrm) == SIG_ERR)
+		  perror("signal alarm");
 		op = -1;
 		scanf("%d", &op);
 
