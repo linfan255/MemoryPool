@@ -43,7 +43,12 @@ void play(char *filename) {
 static void sig_child() {
 	pid_t pid;
 	int status;
-	while((pid = waitpid(-1, &status, WNOHANG)) > 0);
+	int buf[2] = { 2 };
+	while((pid = waitpid(-1, &status, WNOHANG)) > 0) {
+		if(WIFEXITED(status)) {
+			alarm(1);
+		}
+	}
 }
 
 void Play(char *filename) {
