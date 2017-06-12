@@ -12,6 +12,7 @@
 #include "list.h"
 
 pid_t pid, pid2;
+int op, isPlaying, init;
 
 //madplay -q -o wav:- songsName | aplay
 void play(char *filename) {
@@ -36,19 +37,22 @@ void play(char *filename) {
 		dup2(pfd[0], 0);
 		execlp("aplay", "aplay", NULL);
 	}
+
 }
 
 static void sig_child() {
 	pid_t pid;
-	while((pid = waitpid(-1, NULL, WNOHANG)) > 0)
-	  printf("clear child %d\n", pid);
+	int status;
+	while((pid = waitpid(-1, &status, WNOHANG)) > 0);
 }
 
 void Play(char *filename) {
-	signal(SIGCHLD, sig_child);
 	pid = fork();
 	if(pid == 0) {
 		play(filename);
+	}
+	else {
+		signal(SIGCHLD, sig_child);
 	}
 }
 
