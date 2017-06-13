@@ -14,6 +14,9 @@
 pid_t pid, pid2;
 int op, isPlaying, init;
 
+void Play(char *);
+void play(char *);
+
 //madplay -q -o wav:- songsName | aplay
 void play(char *filename) {
 	char songsName[35] = "./songs/";
