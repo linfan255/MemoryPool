@@ -9,6 +9,7 @@
 
 typedef struct Node {
 	char songName[1024];
+	int id;
 	struct Node *next;
 	struct Node *prev;
 } node;
@@ -21,6 +22,7 @@ void insert(char *filename) {
 	if(head == NULL && tail == NULL) {
 		head = (node *)malloc(sizeof(node));
 		strcpy(head->songName, filename);
+		head->id = 1;
 		head->prev = NULL;
 		head->next = NULL;
 
@@ -29,6 +31,7 @@ void insert(char *filename) {
 	else {
 		node* tmp = (node*)malloc(sizeof(node));
 		strcpy(tmp->songName, filename);
+		tmp->id = tail->id + 1;
 		tmp->prev = tail;
 		tmp->next = NULL;
 		tail->next = tmp;
@@ -55,16 +58,11 @@ void print() {	//遍历链表中元素，测试用
 		printf("list empty\n");
 		return;
 	}
-	printf("normal:\n");
-	for(node* it = head; it != NULL; it = it->next) {
-		printf("%s\n", it->songName);
+	node *it;
+	int id = 1;
+	for(it = head; it != NULL; it = it->next) {
+		printf("%d: %s\n", it->id, it->songName);
 	}
-	printf("inverse:\n");
-	for(node* it = tail; it != NULL; it = it->prev)
-	  printf("%s\n", it->songName);
-
-	printf("the head = %s\n", head->songName);
-	printf("the tail = %s\n", tail->songName);
 }
 
 #endif
