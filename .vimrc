@@ -20,6 +20,7 @@ set background=dark
 set showmatch
 set ruler
 set nocompatible
+set backspace=indent,eol,start
 set laststatus=2
 autocmd InsertLeave * se nocul
 autocmd InsertEnter * se cul
@@ -37,9 +38,25 @@ set encoding=utf-8
 
 inoremap ' ''<ESC>i
 inoremap " ""<ESC>i
+
 inoremap ( ()<ESC>i
+inoremap ) <c-r>=ClosePair(')')<CR>
+
 inoremap [ []<ESC>i
+inoremap ] <c-r>=ClosePair(']')<CR>
+
 inoremap { {}<ESC>i
+inoremap } <c-r>=ClosePair('}')<CR>
+imap {<CR> {<CR>}<ESC>O
+
+function! ClosePair(char)
+    if getline('.')[col('.') - 1] == a:char
+        return "\<Right>"
+    else
+        return a:char
+    endif
+endfunction
+
 
 func SkipPair()
     if getline('.')[col('.') - 1] == ')' || getline('.')[col('.') - 1] == ']' || getline('.')[col('.') - 1] == '"' || getline('.')[col('.') - 1] == "'" || getline('.')[col('.') - 1] == '}'
